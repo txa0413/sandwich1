@@ -10,7 +10,6 @@
         body {
             margin: 0;
             overflow: hidden;
-            /* Start-Hintergrundfarbe entspricht dem neuen warmen Gourmet-Theme */
             background-color: #ffedd5; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             touch-action: none;
@@ -67,7 +66,6 @@
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
         
-        /* Sci-Fi Theme CSS Injection */
         body.theme-scifi .glass-panel {
             background: rgba(10, 10, 20, 0.85);
             border: 1px solid #0ea5e9;
@@ -82,19 +80,15 @@
 
     <div id="game-container"></div>
 
-    <!-- UI Overlay -->
     <div id="ui-layer" class="ui-layer">
         
-        <!-- Score & Combo -->
         <div class="absolute top-10 flex flex-col items-center" id="hud" style="display: none;">
             <div class="text-7xl font-black text-amber-500 drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]" id="score-display">0</div>
             <div class="text-2xl font-bold text-red-500 opacity-0 transition-opacity drop-shadow-md" id="combo-display">Combo x2</div>
         </div>
 
-        <!-- Fliegender Text Container -->
         <div id="floating-texts-container" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
 
-        <!-- Startbildschirm -->
         <div id="start-screen" class="interactive flex flex-col items-center justify-center w-full h-full bg-black bg-opacity-20 backdrop-blur-sm transition-opacity duration-500">
             <div class="glass-panel p-10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.4)] text-center max-w-lg w-[90%]">
                 <h1 class="text-5xl md:text-6xl font-black text-gray-800 drop-shadow-sm mb-2 uppercase">Gourmet<br><span class="text-amber-500">Deluxe</span></h1>
@@ -110,7 +104,6 @@
             </div>
         </div>
 
-        <!-- Game Over -->
         <div id="game-over-screen" class="interactive flex flex-col items-center justify-center w-full h-full bg-black bg-opacity-50 backdrop-blur-md hidden transition-opacity duration-500">
             <h2 class="text-6xl md:text-8xl font-bold text-amber-400 drop-shadow-lg mb-2">Bon Appétit!</h2>
             <div class="glass-panel rounded-3xl p-8 text-center shadow-2xl mb-10 w-72 mt-8">
@@ -145,17 +138,16 @@
         let baseSpeed = 0.12;
         let speedMultiplier = 1.0;
         
-        // Dynamik Variablen
+        let lastIngredientIndex = -1; // Speichert die letzte Zutat für den Zufallsgenerator
+        
         let cameraAngle = Math.PI / 4;
         const cameraRadius = 16;
         let targetCameraY = 12;
         let shakeIntensity = 0;
-        let lastTime = 0; // NEU: Für die Zeitmessung (Delta-Time)
+        let lastTime = 0; 
 
-        // Umgebungselemente für Themes
         let tableMesh, plateGroup;
 
-        // UI
         const uiStartScreen = document.getElementById('start-screen');
         const uiGameOverScreen = document.getElementById('game-over-screen');
         const uiScore = document.getElementById('score-display');
@@ -228,7 +220,7 @@
             }
         };
 
-        // --- TEXTUREN & MATERIALIEN (Überarbeitet & Hübscher) ---
+        // --- TEXTUREN & MATERIALIEN ---
         function createFoodTexture(type, baseColorStr, detailColorStr) {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
@@ -238,53 +230,40 @@
                 const grd = ctx.createLinearGradient(0,0,512,512);
                 grd.addColorStop(0, '#fef08a'); grd.addColorStop(1, '#eab308');
                 ctx.fillStyle = grd; ctx.fillRect(0, 0, 512, 512);
-                // 3D Käselöcher
                 for(let i=0; i<15; i++) {
                     const r = 10 + Math.random()*35; const x = Math.random()*512; const y = Math.random()*512;
-                    // Innerer Schatten
                     ctx.fillStyle = 'rgba(180, 83, 9, 0.4)'; ctx.beginPath(); ctx.arc(x+4, y+4, r, 0, Math.PI*2); ctx.fill();
-                    // Grundloch
                     ctx.fillStyle = '#ca8a04'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-                    // Highlight oben links
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; ctx.beginPath(); ctx.arc(x-2, y-2, r*0.3, 0, Math.PI*2); ctx.fill();
                 }
             } else if (type === 'salami') {
                 ctx.fillStyle = '#991b1b'; ctx.fillRect(0,0,512,512); 
-                // Marmoriertes Rot
                 for(let i=0; i<100; i++) {
                     ctx.fillStyle = 'rgba(220, 38, 38, 0.5)';
                     ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*512, 20+Math.random()*40, 0, Math.PI*2); ctx.fill();
                 }
-                // Organisches Fett (Ovale)
                 ctx.fillStyle = '#fee2e2';
                 for(let i=0; i<150; i++) {
-                    ctx.beginPath();
-                    ctx.ellipse(Math.random()*512, Math.random()*512, 3+Math.random()*12, 2+Math.random()*8, Math.random()*Math.PI, 0, Math.PI*2);
-                    ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(Math.random()*512, Math.random()*512, 3+Math.random()*12, 2+Math.random()*8, Math.random()*Math.PI, 0, Math.PI*2); ctx.fill();
                 }
-                // Pfeffer
                 ctx.fillStyle = '#1c1917';
                 for(let i=0; i<40; i++) { ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*512, 2+Math.random()*2, 0, Math.PI*2); ctx.fill(); }
             } else if (type === 'tomato') {
                 ctx.fillStyle = '#dc2626'; ctx.fillRect(0,0,512,512);
-                // 6 Fruchtkammern mit saftigem Verlauf
                 for(let i=0; i<6; i++) {
                     ctx.save(); ctx.translate(256, 256); ctx.rotate((Math.PI/3)*i);
                     const grd = ctx.createRadialGradient(120, 0, 10, 120, 0, 80);
                     grd.addColorStop(0, '#991b1b'); grd.addColorStop(1, 'rgba(153, 27, 27, 0)');
                     ctx.fillStyle = grd;
                     ctx.beginPath(); ctx.ellipse(120, 0, 90, 50, 0, 0, Math.PI*2); ctx.fill();
-                    // Samen
                     ctx.fillStyle = '#fef08a';
                     for(let s=0; s<15; s++) { ctx.beginPath(); ctx.arc(120+(Math.random()-0.5)*100, (Math.random()-0.5)*40, 3+Math.random()*2, 0, Math.PI*2); ctx.fill(); }
                     ctx.restore();
                 }
-                // Helles Zentrum
                 const coreGrd = ctx.createRadialGradient(256, 256, 0, 256, 256, 60);
                 coreGrd.addColorStop(0, '#f87171'); coreGrd.addColorStop(1, 'rgba(248, 113, 113, 0)');
                 ctx.fillStyle = coreGrd; ctx.beginPath(); ctx.arc(256, 256, 60, 0, Math.PI*2); ctx.fill();
             } else if (type === 'bread') {
-                // Getoasteter Verlauf
                 const grd = ctx.createRadialGradient(256,256,100, 256,256,350);
                 grd.addColorStop(0, '#fef08a'); grd.addColorStop(1, '#d97706');
                 ctx.fillStyle = grd; ctx.fillRect(0,0,512,512);
@@ -293,24 +272,20 @@
                 ctx.globalAlpha = 1.0;
             } else if (type === 'lettuce') {
                 ctx.fillStyle = '#4d7c0f'; ctx.fillRect(0,0,512,512);
-                // Überlappende Blätter
                 for(let i=0; i<30; i++) {
                     ctx.fillStyle = (i%2===0) ? '#65a30d' : '#84cc16';
                     ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*512, 40+Math.random()*80, 0, Math.PI*2); ctx.fill();
-                    // Blattadern
                     ctx.strokeStyle = '#a3e635'; ctx.lineWidth = 3;
                     ctx.beginPath(); ctx.moveTo(Math.random()*512, Math.random()*512);
                     ctx.quadraticCurveTo(Math.random()*512, Math.random()*512, Math.random()*512, Math.random()*512); ctx.stroke();
                 }
             } else if (type === 'patty') {
                 ctx.fillStyle = '#3e2723'; ctx.fillRect(0,0,512,512);
-                // Fleischtextur
                 for(let i=0; i<600; i++) {
                     ctx.fillStyle = (Math.random()>0.5) ? '#27150c' : '#4e342e';
                     ctx.globalAlpha = 0.6; ctx.fillRect(Math.random()*512, Math.random()*512, 4+Math.random()*6, 4+Math.random()*6);
                 }
                 ctx.globalAlpha = 1.0;
-                // Grillstreifen!
                 ctx.strokeStyle = '#1a0f0a'; ctx.lineWidth = 25; ctx.globalAlpha = 0.8;
                 for(let i=-200; i<800; i+=80) {
                     ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i+500, 512); ctx.stroke();
@@ -318,36 +293,29 @@
                 ctx.globalAlpha = 1.0;
             } else if (type === 'egg') {
                 ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,512,512); 
-                // Knuspriger Rand
                 ctx.strokeStyle = '#d6d3d1'; ctx.lineWidth = 20;
                 for(let i=0; i<20; i++) {
                     ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*512, 100+Math.random()*200, 0, Math.PI*2); ctx.stroke();
                 }
-                // Eigelb Schatten
                 ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(266, 266, 95, 0, Math.PI*2); ctx.fill();
-                // 3D Eigelb Verlauf
                 const yolkGrd = ctx.createRadialGradient(240, 240, 10, 256, 256, 90);
                 yolkGrd.addColorStop(0, '#fde047'); yolkGrd.addColorStop(0.8, '#f59e0b'); yolkGrd.addColorStop(1, '#d97706');
                 ctx.fillStyle = yolkGrd; ctx.beginPath(); ctx.arc(256, 256, 90, 0, Math.PI*2); ctx.fill();
-                // Lichtreflex
                 ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.ellipse(220, 220, 25, 12, Math.PI/4, 0, Math.PI*2); ctx.fill();
             } else if (type === 'sauce') {
                 const grd = ctx.createLinearGradient(0,0,512,512);
                 grd.addColorStop(0, '#ea580c'); grd.addColorStop(1, '#c2410c');
                 ctx.fillStyle = grd; ctx.fillRect(0,0,512,512);
-                // Saucen Strudel
                 ctx.strokeStyle = '#f97316'; ctx.lineWidth = 15; ctx.lineCap = 'round';
                 for(let i=0; i<12; i++) {
                     ctx.beginPath(); ctx.moveTo(Math.random()*512, Math.random()*512);
                     ctx.bezierCurveTo(Math.random()*512, Math.random()*512, Math.random()*512, Math.random()*512, Math.random()*512, Math.random()*512);
                     ctx.stroke();
                 }
-                // Feuchte Glanzpunkte
                 ctx.fillStyle = 'rgba(255,255,255,0.3)';
                 for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*512, 5+Math.random()*10, 0, Math.PI*2); ctx.fill(); }
             }
 
-            // Vignette für Tiefe
             const edgeGrd = ctx.createRadialGradient(256, 256, 200, 256, 256, 350);
             edgeGrd.addColorStop(0, 'rgba(0,0,0,0)');
             edgeGrd.addColorStop(1, 'rgba(0,0,0,0.4)');
@@ -372,7 +340,6 @@
 
         const BREAD_MATS = createMaterialArray('bread', 0xfef08a, 0xb45309, 0xd97706, 0.9);
 
-        // --- ZUTATEN DEFS MIT ANGEPASSTEN HÖHEN & GLANZ ---
         const INGREDIENTS = [
             { name: "Salat", mats: createMaterialArray('lettuce', 0x84cc16, 0x4d7c0f, 0xa3e635, 0.7), height: 0.4, pColor: 0x84cc16 },
             { name: "Käse",  mats: createMaterialArray('cheese', 0xfde047, 0xca8a04, 0xeab308, 0.4), height: 0.2, pColor: 0xfde047 },
@@ -383,36 +350,21 @@
             { name: "Sauce", mats: createMaterialArray('sauce', 0xff5500, 0xcc2200, 0xffaa00, 0.1), height: 0.2, makesNextFast: true, pColor: 0xff5500 }
         ];
 
-        let currentIngredientIndex = 0;
-
         // --- THEMES & HINTERGRÜNDE ---
         function createMarbleTexture() {
             const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
-            
-            // Warme, weiße Basis
             ctx.fillStyle = '#faf8f5'; ctx.fillRect(0,0,512,512);
-
-            // Weiche Schattierungen (Marmor Wolken)
             for(let i=0; i<100; i++) {
                 ctx.fillStyle = `rgba(0,0,0, ${Math.random()*0.03})`;
-                ctx.beginPath();
-                ctx.arc(Math.random()*512, Math.random()*512, 20+Math.random()*50, 0, Math.PI*2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*512, 20+Math.random()*50, 0, Math.PI*2); ctx.fill();
             }
-
-            // Scharfe graue Adern
             for(let i=0; i<40; i++) {
-                ctx.strokeStyle = `rgba(0,0,0, ${0.05 + Math.random()*0.1})`;
-                ctx.lineWidth = 0.5 + Math.random()*1.5;
-                ctx.beginPath();
-                let x = Math.random()*512; let y = Math.random()*512;
-                ctx.moveTo(x, y);
+                ctx.strokeStyle = `rgba(0,0,0, ${0.05 + Math.random()*0.1})`; ctx.lineWidth = 0.5 + Math.random()*1.5;
+                ctx.beginPath(); let x = Math.random()*512; let y = Math.random()*512; ctx.moveTo(x, y);
                 for(let j=0; j<4; j++) {
-                    const ctrlX = x + (Math.random()-0.5)*100;
-                    const ctrlY = y + (Math.random()-0.5)*100;
-                    x += (Math.random()-0.5)*150;
-                    y += (Math.random()-0.5)*150;
+                    const ctrlX = x + (Math.random()-0.5)*100; const ctrlY = y + (Math.random()-0.5)*100;
+                    x += (Math.random()-0.5)*150; y += (Math.random()-0.5)*150;
                     ctx.quadraticCurveTo(ctrlX, ctrlY, x, y);
                 }
                 ctx.stroke();
@@ -437,8 +389,7 @@
             const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#020617'; ctx.fillRect(0,0,512,512);
-            ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 4;
-            ctx.strokeRect(0,0,512,512);
+            ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 4; ctx.strokeRect(0,0,512,512);
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(20, 20);
             return tex;
@@ -448,19 +399,19 @@
             {
                 name: "Gourmet Kitchen", score: 0,
                 bg: 0xffedd5, tableMap: createMarbleTexture(), 
-                plate: 0x1e293b, plateRoughness: 0.85, // Matte Schieferplatte (Slate)
+                plate: 0x1e293b, plateRoughness: 0.85,
                 fog: 0xffedd5, isDark: false
             },
             {
                 name: "Picnic", score: 10,
                 bg: 0x86efac, tableMap: createWoodTexture(), 
-                plate: 0xfca5a5, plateRoughness: 0.3, // Pinkes Plastik
+                plate: 0xfca5a5, plateRoughness: 0.3, 
                 fog: 0x86efac, text: "🌳 Picknick-Modus freigeschaltet!", isDark: false
             },
             {
                 name: "Sci-Fi", score: 25,
                 bg: 0x020617, tableMap: createNeonGrid(), 
-                plate: 0x0ea5e9, plateRoughness: 0.1, // Glänzendes Neon
+                plate: 0x0ea5e9, plateRoughness: 0.1, 
                 fog: 0x000000, text: "🚀 Sci-Fi Dimension erreicht!", isDark: true
             }
         ];
@@ -468,8 +419,7 @@
 
         function showFloatingText(msg, color) {
             const el = document.createElement('div');
-            el.className = 'floating-text';
-            el.innerText = msg;
+            el.className = 'floating-text'; el.innerText = msg;
             if(color) el.style.color = color;
             floatingContainer.appendChild(el);
             setTimeout(() => el.remove(), 1000);
@@ -478,26 +428,20 @@
         function checkTheme() {
             const nextTheme = THEMES[currentThemeIdx + 1];
             if (nextTheme && score >= nextTheme.score) {
-                currentThemeIdx++;
-                applyTheme(THEMES[currentThemeIdx]);
+                currentThemeIdx++; applyTheme(THEMES[currentThemeIdx]);
             }
         }
 
         function applyTheme(theme) {
-            scene.background.setHex(theme.bg);
-            scene.fog.color.setHex(theme.fog);
+            scene.background.setHex(theme.bg); scene.fog.color.setHex(theme.fog);
             document.body.style.backgroundColor = '#' + theme.bg.toString(16).padStart(6, '0');
 
-            tableMesh.material.map = theme.tableMap;
-            tableMesh.material.needsUpdate = true;
+            tableMesh.material.map = theme.tableMap; tableMesh.material.needsUpdate = true;
             
             plateGroup.children.forEach(c => {
-                c.material.color.setHex(theme.plate);
-                c.material.roughness = theme.plateRoughness;
-                
+                c.material.color.setHex(theme.plate); c.material.roughness = theme.plateRoughness;
                 if(theme.isDark) {
-                    c.material.emissive.setHex(theme.plate);
-                    c.material.emissiveIntensity = 0.2;
+                    c.material.emissive.setHex(theme.plate); c.material.emissiveIntensity = 0.2;
                 } else {
                     c.material.emissiveIntensity = 0;
                 }
@@ -505,34 +449,25 @@
 
             if(theme.isDark) {
                 document.body.classList.add('theme-scifi');
-                hemiLight.intensity = 0.2;
-                dirLight.intensity = 1.0;
-                dirLight.color.setHex(0x38bdf8); 
+                hemiLight.intensity = 0.2; dirLight.intensity = 1.0; dirLight.color.setHex(0x38bdf8); 
             } else {
                 document.body.classList.remove('theme-scifi');
-                hemiLight.intensity = 0.5;
-                dirLight.intensity = 0.7;
-                dirLight.color.setHex(0xffffff);
+                hemiLight.intensity = 0.5; dirLight.intensity = 0.7; dirLight.color.setHex(0xffffff);
             }
 
             if (theme.text) showFloatingText(theme.text, theme.isDark ? '#38bdf8' : '#22c55e');
         }
 
-        // --- PARTIKEL SYSTEM ---
         function spawnParticles(x, y, z, colorHex) {
             const count = 8;
             for(let i=0; i<count; i++) {
                 const mat = new THREE.MeshLambertMaterial({ color: colorHex });
                 const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), mat);
                 mesh.position.set(x + (Math.random()-0.5)*2, y, z + (Math.random()-0.5)*2);
-                mesh.castShadow = true;
-                scene.add(mesh);
+                mesh.castShadow = true; scene.add(mesh);
                 particles.push({
-                    mesh: mesh,
-                    velY: 0.2 + Math.random()*0.3,
-                    velX: (Math.random()-0.5)*0.4,
-                    velZ: (Math.random()-0.5)*0.4,
-                    life: 1.0
+                    mesh: mesh, velY: 0.2 + Math.random()*0.3,
+                    velX: (Math.random()-0.5)*0.4, velZ: (Math.random()-0.5)*0.4, life: 1.0
                 });
             }
         }
@@ -550,19 +485,15 @@
 
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.outputEncoding = THREE.sRGBEncoding;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.0;
             document.getElementById('game-container').appendChild(renderer.domElement);
 
-            hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5);
-            scene.add(hemiLight);
+            hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5); scene.add(hemiLight);
 
             dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
-            dirLight.position.set(15, 30, 10);
-            dirLight.castShadow = true;
+            dirLight.position.set(15, 30, 10); dirLight.castShadow = true;
             dirLight.shadow.camera.left = -20; dirLight.shadow.camera.right = 20;
             dirLight.shadow.camera.top = 20; dirLight.shadow.camera.bottom = -20;
             scene.add(dirLight);
@@ -574,28 +505,22 @@
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('restart-btn').addEventListener('click', startGame);
 
-            animate();
+            requestAnimationFrame(animate);
         }
 
         function setupEnvironment() {
             const tableGeo = new THREE.PlaneGeometry(150, 150);
             const tableMat = new THREE.MeshStandardMaterial({ map: THEMES[0].tableMap, roughness: 0.9 });
             tableMesh = new THREE.Mesh(tableGeo, tableMat);
-            tableMesh.rotation.x = -Math.PI / 2;
-            tableMesh.receiveShadow = true;
-            scene.add(tableMesh);
+            tableMesh.rotation.x = -Math.PI / 2; tableMesh.receiveShadow = true; scene.add(tableMesh);
 
             plateGroup = new THREE.Group();
-            const plateMat = new THREE.MeshStandardMaterial({ 
-                color: THEMES[0].plate, 
-                roughness: THEMES[0].plateRoughness 
-            });
+            const plateMat = new THREE.MeshStandardMaterial({ color: THEMES[0].plate, roughness: THEMES[0].plateRoughness });
             const pBase = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 5.0, 0.3, 64), plateMat);
             pBase.position.y = 0.15; pBase.receiveShadow = true; pBase.castShadow = true;
             const pRim = new THREE.Mesh(new THREE.TorusGeometry(6.0, 0.5, 32, 64), plateMat);
             pRim.position.y = 0.3; pRim.rotation.x = Math.PI / 2; pRim.receiveShadow = true; pRim.castShadow = true;
-            plateGroup.add(pBase, pRim);
-            scene.add(plateGroup);
+            plateGroup.add(pBase, pRim); scene.add(plateGroup);
         }
 
         function updateCameraPosition() {
@@ -607,9 +532,7 @@
 
         // --- SPIEL LOGIK ---
         function startGame() {
-            fx.init();
-            fx.startAmbience();
-            fx.startMusic();
+            fx.init(); fx.startAmbience(); fx.startMusic();
             
             blocks.forEach(b => scene.remove(b));
             fallingBlocks.forEach(b => scene.remove(b.mesh || b));
@@ -620,24 +543,20 @@
             blocks = []; fallingBlocks = []; particles = [];
             
             score = 0; combo = 0; currentThemeIdx = 0;
-            uiScore.innerText = score;
-            uiCombo.style.opacity = 0;
+            uiScore.innerText = score; uiCombo.style.opacity = 0;
             currentWidth = INITIAL_SIZE; currentDepth = INITIAL_SIZE;
             currentAxis = 'x'; direction = 1; speedMultiplier = 1.0;
+            lastIngredientIndex = -1; // Reset für den Randomizer
             
             applyTheme(THEMES[0]);
             
             towerTopY = 0.5; 
-            currentIngredientIndex = 0;
-            targetCameraY = 12;
-            cameraAngle = Math.PI / 4;
+            targetCameraY = 12; cameraAngle = Math.PI / 4;
             updateCameraPosition();
 
-            uiStartScreen.classList.add('hidden');
-            uiGameOverScreen.classList.add('hidden');
+            uiStartScreen.classList.add('hidden'); uiGameOverScreen.classList.add('hidden');
             document.getElementById('hud').style.display = 'flex';
 
-            // Base Toast
             const breadH = 1.0;
             const breadMesh = new THREE.Mesh(new THREE.BoxGeometry(INITIAL_SIZE, breadH, INITIAL_SIZE), BREAD_MATS);
             breadMesh.position.set(0, towerTopY + breadH/2, 0);
@@ -650,7 +569,15 @@
         }
 
         function createMovingBlock() {
-            const ing = INGREDIENTS[currentIngredientIndex % INGREDIENTS.length];
+            // ZUFALLS-GENERATOR (keine Wiederholungen direkt nacheinander)
+            let nextIndex;
+            do {
+                nextIndex = Math.floor(Math.random() * INGREDIENTS.length);
+            } while (nextIndex === lastIngredientIndex);
+            lastIngredientIndex = nextIndex;
+            
+            const ing = INGREDIENTS[nextIndex];
+            
             const geometry = new THREE.BoxGeometry(currentWidth, ing.height, currentDepth);
             const block = new THREE.Mesh(geometry, ing.mats);
             
@@ -667,8 +594,7 @@
             }
 
             block.castShadow = true; block.receiveShadow = true;
-            scene.add(block);
-            currentBlock = block;
+            scene.add(block); currentBlock = block;
             currentBlock.userData = ing; 
             currentBlock.userData.timeOffset = Math.random() * 100; 
         }
@@ -685,7 +611,6 @@
                 currentBlock = null;
             }
 
-            // Deckel fallen lassen
             const breadH = 1.0;
             topBun = new THREE.Mesh(new THREE.BoxGeometry(currentWidth, breadH, currentDepth), BREAD_MATS);
             const last = blocks[blocks.length - 1];
@@ -718,32 +643,25 @@
                 if (absoluteDelta <= snapThreshold) {
                     // PERFEKT
                     currentBlock.position[currentAxis] = prevPos;
-                    combo++;
-                    fx.playPerfect(combo);
+                    combo++; fx.playPerfect(combo);
                     
-                    uiCombo.innerText = `Combo x${combo}!`;
-                    uiCombo.style.opacity = 1;
+                    uiCombo.innerText = `Combo x${combo}!`; uiCombo.style.opacity = 1;
                     
                     if(combo >= 5) {
-                        showFloatingText("+ GRÖSSE!", "#22c55e");
-                        fx.playPowerup();
+                        showFloatingText("+ GRÖSSE!", "#22c55e"); fx.playPowerup();
                         currentWidth = Math.min(INITIAL_SIZE, currentWidth + 0.5);
                         currentDepth = Math.min(INITIAL_SIZE, currentDepth + 0.5);
                         currentBlock.geometry.dispose();
                         currentBlock.geometry = new THREE.BoxGeometry(currentWidth, h, currentDepth);
-                        combo = 0; 
-                        uiCombo.style.opacity = 0;
+                        combo = 0; uiCombo.style.opacity = 0;
                     }
                 } else {
                     // GESCHNITTEN
-                    combo = 0;
-                    uiCombo.style.opacity = 0;
-                    fx.playChop(); 
-                    spawnParticles(currentBlock.position.x, currentBlock.position.y, currentBlock.position.z, pColor);
+                    combo = 0; uiCombo.style.opacity = 0;
+                    fx.playChop(); spawnParticles(currentBlock.position.x, currentBlock.position.y, currentBlock.position.z, pColor);
 
                     const newWidth = currentAxis === 'x' ? overlap : currentWidth;
                     const newDepth = currentAxis === 'z' ? overlap : currentDepth;
-                    
                     const newPos = currentBlock.position.clone();
                     newPos[currentAxis] = prevPos + (delta / 2); 
                     
@@ -758,8 +676,7 @@
                     const fBox = new THREE.Mesh(new THREE.BoxGeometry(fWidth, h, fDepth), currentBlock.material);
                     const fPos = currentBlock.position.clone();
                     fPos[currentAxis] = prevPos + (overlap / 2 + fSize / 2) * Math.sign(delta);
-                    fBox.position.copy(fPos);
-                    fBox.castShadow = true;
+                    fBox.position.copy(fPos); fBox.castShadow = true;
                     
                     scene.add(fBox);
                     fallingBlocks.push({ mesh: fBox, rotSpeedX: currentAxis === 'z' ? (Math.random()-0.5)*0.2 : 0, rotSpeedZ: currentAxis === 'x' ? (Math.random()-0.5)*0.2 : 0 });
@@ -767,67 +684,43 @@
                     currentWidth = newWidth; currentDepth = newDepth;
                 }
 
-                if (currentBlock.userData.causesShake) {
-                    shakeIntensity = 0.6; 
-                    fx.playThud();
-                }
-
-                if (currentBlock.userData.makesNextFast) {
-                    speedMultiplier = 2.0; 
-                    showFloatingText("SCHARF!", "#ef4444");
-                } else {
-                    speedMultiplier = 1.0;
-                }
+                if (currentBlock.userData.causesShake) { shakeIntensity = 0.6; fx.playThud(); }
+                if (currentBlock.userData.makesNextFast) { speedMultiplier = 2.0; showFloatingText("SCHARF!", "#ef4444"); } 
+                else { speedMultiplier = 1.0; }
 
                 currentBlock.rotation.set(0,0,0);
-
-                blocks.push(currentBlock);
-                towerTopY += h; 
+                blocks.push(currentBlock); towerTopY += h; 
                 
-                score++;
-                uiScore.innerText = score;
-                uiScore.classList.remove('score-pop');
-                void uiScore.offsetWidth; 
-                uiScore.classList.add('score-pop');
+                score++; uiScore.innerText = score;
+                uiScore.classList.remove('score-pop'); void uiScore.offsetWidth; uiScore.classList.add('score-pop');
 
                 targetCameraY = 12 + towerTopY - 2;
 
                 checkTheme(); 
 
-                currentIngredientIndex++;
                 currentAxis = currentAxis === 'x' ? 'z' : 'x';
                 direction = Math.random() > 0.5 ? 1 : -1;
                 
                 createMovingBlock();
 
             } else {
-                fx.playFall();
-                gameOver();
+                fx.playFall(); gameOver();
             }
         }
 
         // --- ANIMATION LOOP ---
         function animate(currentTime) {
             requestAnimationFrame(animate);
-            
-            // Delta-Time Berechnung: Unabhängig von der Bildwiederholrate (Hz)
             if (!currentTime) currentTime = performance.now();
             let deltaTime = currentTime - lastTime;
             lastTime = currentTime;
-            
-            // Verhindert riesige Sprünge in der Physik, wenn der Tab im Hintergrund war
             if (deltaTime > 100) deltaTime = 16.66; 
-            
-            // timeScale ist 1 bei 60 FPS. Bei 144 FPS ist es kleiner (ca. 0.41)
             const timeScale = deltaTime / 16.666; 
-            
             const time = Date.now();
 
             if (state === 'PLAYING' && currentBlock) {
                 let calculatedSpeed = Math.min(0.22, baseSpeed + (score * 0.0012));
                 let speed = calculatedSpeed * speedMultiplier;
-                
-                // timeScale wird auf alle Bewegungen angewendet
                 currentBlock.position[currentAxis] += speed * direction * timeScale;
                 
                 const limit = 14;
@@ -843,7 +736,6 @@
                 }
             }
 
-            // Fallende Reste
             for (let i = fallingBlocks.length - 1; i >= 0; i--) {
                 const f = fallingBlocks[i];
                 f.mesh.position.y -= 0.4 * timeScale; 
@@ -851,17 +743,14 @@
                 if (f.mesh.position.y < -10) { scene.remove(f.mesh); fallingBlocks.splice(i, 1); }
             }
 
-            // Partikel (Krümel)
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.velY -= 0.02 * timeScale; 
                 p.mesh.position.x += p.velX * timeScale; p.mesh.position.y += p.velY * timeScale; p.mesh.position.z += p.velZ * timeScale;
-                p.mesh.scale.set(p.life, p.life, p.life);
-                p.life -= 0.02 * timeScale;
+                p.mesh.scale.set(p.life, p.life, p.life); p.life -= 0.02 * timeScale;
                 if (p.life <= 0 || p.mesh.position.y < -5) { scene.remove(p.mesh); particles.splice(i, 1); }
             }
 
-            // Game Over Deckel
             if (state === 'GAMEOVER' && topBun) {
                 if (topBun.position.y > topBun.userData.targetY) {
                     topBun.position.y -= 0.5 * timeScale; 
@@ -873,10 +762,7 @@
                 }
             }
 
-            // Kamera Rotation (ab Score 30 dreht sie sich langsam)
-            if (state === 'PLAYING' && score >= 30) {
-                cameraAngle += 0.002 * timeScale;
-            }
+            if (state === 'PLAYING' && score >= 30) cameraAngle += 0.002 * timeScale;
 
             updateCameraPosition();
             if (shakeIntensity > 0) {
